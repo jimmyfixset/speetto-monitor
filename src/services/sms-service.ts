@@ -22,7 +22,7 @@ export class SMSService {
   private readonly apiKey: string;
   private readonly secretKey: string;
   private readonly baseUrl = 'https://api.solapi.com';
-  private readonly defaultFrom = '01012345678'; // 발신번호 (실제 등록된 번호로 변경 필요)
+  private readonly defaultFrom = '01067790104'; // 발신번호 (동일 번호 사용)
 
   constructor(config: SMSConfig) {
     this.apiKey = config.apiKey;

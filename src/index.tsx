@@ -126,43 +126,20 @@ app.get('/', (c) => {
                 스피또 모니터링 시스템
             </h1>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <h2 class="text-xl font-semibold mb-4">
-                        <i class="fas fa-bell mr-2 text-blue-600"></i>
-                        알림 설정
-                    </h2>
-                    <div id="notification-form">
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">전화번호</label>
-                            <input type="text" id="phone-number" placeholder="010-1234-5678" 
-                                   class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">모니터링할 게임</label>
-                            <div class="space-y-2">
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="speetto1000" value="speetto1000" class="mr-2">
-                                    <span>스피또1000</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="speetto2000" value="speetto2000" class="mr-2">
-                                    <span>스피또2000</span>
-                                </label>
-                            </div>
-                        </div>
-                        <button onclick="saveNotificationSettings()" 
-                                class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
-                            알림 설정 저장
-                        </button>
-                    </div>
-                </div>
-                
+            <div class="grid grid-cols-1 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-lg shadow">
                     <h2 class="text-xl font-semibold mb-4">
                         <i class="fas fa-chart-line mr-2 text-green-600"></i>
-                        현재 상태
+                        스피또 현재 상태
                     </h2>
+                    <div class="mb-4 p-4 bg-blue-50 rounded-lg">
+                        <div class="flex items-center text-blue-800">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <span class="text-sm">
+                                <strong>자동 모니터링:</strong> 매 1시간마다 출고율 100% + 1등 잔존 시 01067790104로 SMS 발송
+                            </span>
+                        </div>
+                    </div>
                     <div id="current-status">
                         <p class="text-gray-600">데이터를 불러오는 중...</p>
                     </div>
@@ -193,37 +170,7 @@ app.get('/', (c) => {
 })
 
 // API 라우트들
-app.post('/api/notification-settings', async (c) => {
-  const { env } = c
-  const { phoneNumber, targetGames } = await c.req.json()
-  
-  try {
-    // 기존 설정이 있는지 확인
-    const existing = await env.DB.prepare(`
-      SELECT id FROM notification_settings WHERE phone_number = ?
-    `).bind(phoneNumber).first()
-    
-    if (existing) {
-      // 업데이트
-      await env.DB.prepare(`
-        UPDATE notification_settings 
-        SET target_games = ?, updated_at = CURRENT_TIMESTAMP 
-        WHERE phone_number = ?
-      `).bind(JSON.stringify(targetGames), phoneNumber).run()
-    } else {
-      // 새로 생성
-      await env.DB.prepare(`
-        INSERT INTO notification_settings (phone_number, target_games) 
-        VALUES (?, ?)
-      `).bind(phoneNumber, JSON.stringify(targetGames)).run()
-    }
-    
-    return c.json({ success: true, message: '알림 설정이 저장되었습니다.' })
-  } catch (error) {
-    console.error('Error saving notification settings:', error)
-    return c.json({ success: false, message: '설정 저장 중 오류가 발생했습니다.' }, 500)
-  }
-})
+// 고정 전화번호 사용으로 알림 설정 API 제거
 
 // 현재 스피또 상태 조회
 app.get('/api/status', async (c) => {

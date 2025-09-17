@@ -121,27 +121,43 @@ export class MonitoringService {
   private async saveGameData(gameData: SpeettoGameData): Promise<void> {
     try {
       // 1. 게임 정보 저장/업데이트
-      await this.db.prepare(`
-        INSERT OR REPLACE INTO games (name, round, updated_at) 
-        VALUES (?, ?, CURRENT_TIMESTAMP)
-      `).bind(gameData.game, gameData.round).run();
-
-      const gameResult = await this.db.prepare(`
+      let gameId: number;
+      
+      // 먼저 기존 게임이 있는지 확인
+      const existingGame = await this.db.prepare(`
         SELECT id FROM games WHERE name = ? AND round = ?
       `).bind(gameData.game, gameData.round).first();
 
-      if (!gameResult) {
-        throw new Error('게임 정보 저장 실패');
+      if (existingGame) {
+        gameId = existingGame.id as number;
+        // 업데이트
+        await this.db.prepare(`
+          UPDATE games SET updated_at = CURRENT_TIMESTAMP WHERE id = ?
+        `).bind(gameId).run();
+      } else {
+        // 새로 생성
+        const insertResult = await this.db.prepare(`
+          INSERT INTO games (name, round, created_at, updated_at) 
+          VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `).bind(gameData.game, gameData.round).run();
+        
+        gameId = insertResult.meta.last_row_id as number;
       }
 
-      // 2. 모니터링 데이터 저장
+      // 2. 모니터링 데이터 저장 (중복 방지)
+      // 기존 모니터링 데이터 삭제 후 새로 추가
       await this.db.prepare(`
-        INSERT OR REPLACE INTO monitoring_data 
+        DELETE FROM monitoring_data 
+        WHERE game_id = ? AND as_of_date = ?
+      `).bind(gameId, gameData.asOf).run();
+
+      await this.db.prepare(`
+        INSERT INTO monitoring_data 
         (game_id, as_of_date, store_instock_rate, first_prize_remaining, 
          second_prize_remaining, third_prize_remaining, created_at) 
         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `).bind(
-        gameResult.id,
+        gameId,
         gameData.asOf,
         gameData.storeInstockRate,
         gameData.prizes.first.remaining,
@@ -156,38 +172,17 @@ export class MonitoringService {
   }
 
   /**
-   * 특정 게임을 모니터링하는 사용자 목록 조회
+   * 고정 수신자 정보 반환 (01067790104)
    */
   private async getRecipientsForGame(gameName: string): Promise<NotificationSetting[]> {
-    try {
-      const results = await this.db.prepare(`
-        SELECT phone_number, target_games, is_active 
-        FROM notification_settings 
-        WHERE is_active = 1
-      `).all();
+    // 고정 전화번호로 모든 게임에 대해 알림 발송
+    const fixedRecipient: NotificationSetting = {
+      phone_number: '01067790104',
+      target_games: ['speetto1000', 'speetto2000'],
+      is_active: true
+    };
 
-      const recipients: NotificationSetting[] = [];
-
-      for (const row of results.results) {
-        try {
-          const targetGames = JSON.parse(row.target_games as string);
-          if (targetGames.includes(gameName)) {
-            recipients.push({
-              phone_number: row.phone_number as string,
-              target_games: targetGames,
-              is_active: row.is_active as boolean
-            });
-          }
-        } catch (parseError) {
-          console.error('target_games 파싱 오류:', parseError, row);
-        }
-      }
-
-      return recipients;
-    } catch (error) {
-      console.error('수신자 목록 조회 오류:', error);
-      return [];
-    }
+    return [fixedRecipient];
   }
 
   /**
@@ -222,7 +217,7 @@ export class MonitoringService {
     // SMS 발송
     const smsResult = await this.smsService.sendSMS({
       to: recipient.phone_number,
-      from: '01012345678', // 실제 발신번호로 변경 필요
+      from: '01067790104', // 고정 발신번호
       text: message,
       type: 'LMS' // 긴 문자이므로 LMS 사용
     });

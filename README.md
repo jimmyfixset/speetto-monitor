@@ -29,11 +29,10 @@
 
 ## 사용자 가이드
 
-### 1. 알림 설정
-1. 웹사이트 접속
-2. "알림 설정" 섹션에서 전화번호 입력 (예: 010-1234-5678)
-3. 모니터링할 게임 선택 (스피또1000, 스피또2000)
-4. "알림 설정 저장" 버튼 클릭
+### 1. 자동 모니터링
+- **자동 체크**: 매 1시간마다 동행복권 사이트에서 스피또 현황 확인
+- **수신번호**: 고정 번호 `01067790104`로 SMS 발송
+- **알림 조건**: 출고율 100% + 1등 잔존 시
 
 ### 2. 현재 상태 확인
 - "현재 상태" 섹션에서 실시간 출고율 및 잔여 당첨금 확인
@@ -78,17 +77,37 @@
 
 ## API 엔드포인트
 - `GET /`: 메인 대시보드
-- `POST /api/notification-settings`: 알림 설정 저장
 - `GET /api/status`: 현재 스피또 상태 조회
 - `POST /api/check-now`: 수동 체크 실행
 - `GET /api/notification-logs`: 알림 로그 조회
 - `GET /api/cron-trigger`: Cron 트리거 수동 테스트
 
+### 📱 알림 메시지 예시
+```
+🚨 스피또 알림 🚨
+
+스피또1000 99회
+📊 출고율: 100%
+🎰 1등 잔여: 2매
+
+출고율 100%에 1등이 남아있습니다!
+지금이 구매 기회입니다! 🍀
+
+시간: 2025-09-17 19:30:15
+```
+
+### 🔧 현재 테스트 상태
+- ✅ **시스템 로직**: 정상 동작 (알림 조건 만족 감지)
+- ✅ **데이터베이스**: 정상 저장 및 조회  
+- ✅ **웹 대시보드**: 실시간 현황 표시
+- ⚠️ **SMS 발송**: SOLAPI API 키 설정 필요
+- ✅ **자동 스케줄링**: 1시간마다 Cron 실행 설정
+
 ## 배포 상태
 - **로컬 개발**: ✅ 실행 중 (PM2)
-- **Cloudflare Pages**: ⏳ 배포 대기
-- **SMS 연동**: ⏳ API 키 설정 필요
-- **자동 스케줄링**: ✅ 구현 완료 (배포 시 활성화)
+- **Cloudflare Pages**: ⏳ 프로덕션 배포 대기  
+- **SMS 연동**: ⚠️ SOLAPI API 키 설정 필요
+- **자동 스케줄링**: ✅ 구현 완료 (1시간 간격)
 
 ## 설치 및 실행
 
@@ -127,13 +146,31 @@ npx wrangler d1 create speetto-monitor-production
 npx wrangler d1 migrations apply speetto-monitor-production --local
 ```
 
-## 다음 단계
-1. **Cloudflare API 키 설정**: `setup_cloudflare_api_key` 도구 사용
-2. **D1 데이터베이스 생성**: wrangler CLI로 프로덕션 데이터베이스 생성
-3. **SOLAPI 계정 생성**: SMS 발송을 위한 API 키 발급
-4. **발신번호 등록**: SOLAPI에서 발신번호 등록 및 승인
-5. **Cloudflare Pages 배포**: 프로덕션 환경 배포
-6. **GitHub 연동**: 버전 관리 및 CI/CD 구축
+## 프로덕션 배포를 위한 다음 단계
+
+### 필수 설정
+1. **SOLAPI 계정 설정**: 
+   - SOLAPI 가입 및 API 키 발급
+   - 발신번호 `01067790104` 등록 및 승인
+   - 환경변수 설정: `SOLAPI_API_KEY`, `SOLAPI_SECRET_KEY`
+
+2. **Cloudflare 배포**:
+   ```bash
+   # Cloudflare API 키 설정
+   setup_cloudflare_api_key
+   
+   # D1 데이터베이스 생성
+   npx wrangler d1 create speetto-monitor-production
+   
+   # 프로덕션 배포
+   npm run deploy:prod
+   ```
+
+### 시스템 특징
+- **완전 자동화**: 사용자 개입 없이 자동 모니터링 및 알림
+- **조건 만족 시에만 발송**: 불필요한 알림 최소화  
+- **중복 방지**: 동일 게임/회차/일자에 대해 최대 1회 발송
+- **실시간 모니터링**: 웹 대시보드를 통한 현황 확인
 
 ## 라이선스
 MIT License

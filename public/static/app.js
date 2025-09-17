@@ -67,49 +67,7 @@ function displayCurrentStatus(data) {
     statusDiv.innerHTML = html;
 }
 
-// 알림 설정 저장
-async function saveNotificationSettings() {
-    const phoneNumber = document.getElementById('phone-number').value.trim();
-    const speetto1000 = document.getElementById('speetto1000').checked;
-    const speetto2000 = document.getElementById('speetto2000').checked;
-    
-    if (!phoneNumber) {
-        showError('전화번호를 입력해주세요.');
-        return;
-    }
-    
-    if (!speetto1000 && !speetto2000) {
-        showError('모니터링할 게임을 최소 하나는 선택해주세요.');
-        return;
-    }
-    
-    // 전화번호 형식 검증 (간단한 검증)
-    const phonePattern = /^010-?\d{4}-?\d{4}$/;
-    if (!phonePattern.test(phoneNumber)) {
-        showError('올바른 전화번호 형식을 입력해주세요. (예: 010-1234-5678)');
-        return;
-    }
-    
-    const targetGames = [];
-    if (speetto1000) targetGames.push('speetto1000');
-    if (speetto2000) targetGames.push('speetto2000');
-    
-    try {
-        const response = await axios.post('/api/notification-settings', {
-            phoneNumber: phoneNumber.replace(/-/g, ''), // 하이픈 제거
-            targetGames: targetGames
-        });
-        
-        if (response.data.success) {
-            showSuccess(response.data.message);
-        } else {
-            showError(response.data.message);
-        }
-    } catch (error) {
-        console.error('Error saving settings:', error);
-        showError('설정 저장 중 오류가 발생했습니다.');
-    }
-}
+// 고정 전화번호 사용으로 알림 설정 기능 제거
 
 // 수동 체크
 async function checkNow() {
@@ -228,5 +186,5 @@ function showNotification(message, type) {
     }, 3000);
 }
 
-// 주기적으로 상태 업데이트 (5분마다)
+// 주기적으로 상태 업데이트 (5분마다) - 실제 자동 모니터링은 1시간마다 서버에서 실행
 setInterval(loadCurrentStatus, 5 * 60 * 1000);

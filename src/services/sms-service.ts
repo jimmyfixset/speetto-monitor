@@ -92,9 +92,9 @@ export class SMSService {
    */
   private async makeAPICall(endpoint: string, method: 'GET' | 'POST', data?: any): Promise<any> {
     const url = `${this.baseUrl}${endpoint}`;
-    const timestamp = new Date().getTime().toString();
+    const timestamp = new Date().toISOString();
     const salt = this.generateSalt();
-    const signature = this.generateSignature(method, endpoint, timestamp, salt, data);
+    const signature = await this.generateSignature(timestamp, salt);
 
     const headers: Record<string, string> = {
       'Authorization': `HMAC-SHA256 apiKey=${this.apiKey}, date=${timestamp}, salt=${salt}, signature=${signature}`,
@@ -110,48 +110,53 @@ export class SMSService {
       requestOptions.body = JSON.stringify(data);
     }
 
+    console.log('SOLAPI 요청:', { url, method, headers, body: requestOptions.body });
+
     const response = await fetch(url, requestOptions);
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('SOLAPI API 오류 응답:', response.status, errorText);
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
 
     return await response.json();
   }
 
   /**
-   * HMAC-SHA256 서명 생성
+   * HMAC-SHA256 서명 생성 (SOLAPI 방식)
    */
-  private generateSignature(method: string, endpoint: string, timestamp: string, salt: string, data?: any): string {
-    let message = `${method}${endpoint}${timestamp}${salt}`;
+  private async generateSignature(timestamp: string, salt: string): Promise<string> {
+    // SOLAPI는 단순히 date + salt로 서명 생성
+    const message = `${timestamp}${salt}`;
     
-    if (method === 'POST' && data) {
-      message += JSON.stringify(data);
-    }
-
-    // Cloudflare Workers 환경에서는 crypto.subtle 사용
-    return this.hmacSha256(this.secretKey, message);
+    return await this.hmacSha256(this.secretKey, message);
   }
 
   /**
    * HMAC-SHA256 해시 생성 (Cloudflare Workers 환경용)
    */
   private async hmacSha256(key: string, message: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(key);
-    const messageData = encoder.encode(message);
+    try {
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(key);
+      const messageData = encoder.encode(message);
 
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      keyData,
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyData,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
 
-    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-    const hashArray = Array.from(new Uint8Array(signature));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+      const hashArray = Array.from(new Uint8Array(signature));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (error) {
+      console.error('HMAC 서명 생성 오류:', error);
+      throw error;
+    }
   }
 
   /**

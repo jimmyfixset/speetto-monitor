@@ -1,34 +1,23 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "webapp",
+  "name": "speetto-monitor",
   "compatibility_date": "2025-09-17",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
     "nodejs_compat"
-  ]
-  // "vars": {
-  //   "MY_VAR": "my-variable"
-  // },
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "MY_KV_NAMESPACE",
-  //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  //   }
-  // ],
-  // "r2_buckets": [
-  //   {
-  //     "binding": "MY_BUCKET",
-  //     "bucket_name": "my-bucket"
-  //   }
-  // ],
-  // "d1_databases": [
-  //   {
-  //     "binding": "MY_DB",
-  //     "database_name": "my-database",
-  //     "database_id": ""
-  //   }
-  // ],
-  // "ai": {
-  //   "binding": "AI"
-  // }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "speetto-monitor-production",
+      "database_id": ""
+    }
+  ],
+  // Cron Triggers: 자동 스케줄링 설정
+  "triggers": {
+    "crons": [
+      // 매 10분마다 스피또 모니터링 실행
+      "*/10 * * * *"
+    ]
+  }
 }

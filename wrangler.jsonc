@@ -6,14 +6,14 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  // D1 데이터베이스는 프로덕션 배포 후 설정
-  // "d1_databases": [
-  //   {
-  //     "binding": "DB",
-  //     "database_name": "speetto-monitor-production",
-  //     "database_id": ""
-  //   }
-  // ],
+  // D1 데이터베이스 설정 (Cloudflare Pages에서 바인딩으로 처리)
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "speettomonitorproduction",
+      "database_id": "your-database-id-here"
+    }
+  ],
   // Cron Triggers는 Workers에서 지원, Pages에서는 별도 설정 필요
   // "triggers": {
   //   "crons": [

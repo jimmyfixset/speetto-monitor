@@ -6,18 +6,18 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "speetto-monitor-production",
-      "database_id": ""
-    }
-  ],
-  // Cron Triggers: 자동 스케줄링 설정
-  "triggers": {
-    "crons": [
-      // 매 1시간마다 스피또 모니터링 실행 (정시)
-      "0 * * * *"
-    ]
-  }
+  // D1 데이터베이스는 프로덕션 배포 후 설정
+  // "d1_databases": [
+  //   {
+  //     "binding": "DB",
+  //     "database_name": "speetto-monitor-production",
+  //     "database_id": ""
+  //   }
+  // ],
+  // Cron Triggers는 Workers에서 지원, Pages에서는 별도 설정 필요
+  // "triggers": {
+  //   "crons": [
+  //     "0 * * * *"
+  //   ]
+  // }
 }

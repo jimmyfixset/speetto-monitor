@@ -42,10 +42,10 @@ const initializeDatabase = async (db: D1Database) => {
     // 기본 테이블들이 있는지 확인
     const tablesExist = await db.prepare(`
       SELECT name FROM sqlite_master 
-      WHERE type='table' AND name IN ('games', 'monitoring_data', 'notification_settings', 'notification_logs')
+      WHERE type='table' AND name IN ('games', 'monitoring_logs')
     `).all()
     
-    if (tablesExist.results.length < 4) {
+    if (tablesExist.results.length < 2) {
       console.log('데이터베이스 테이블 초기화 실행...')
       
       // migrations 스크립트 실행 (여기서는 직접 SQL 작성)
@@ -55,40 +55,24 @@ const initializeDatabase = async (db: D1Database) => {
           name TEXT NOT NULL,
           round INTEGER NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           UNIQUE(name, round)
         )`),
         
-        db.prepare(`CREATE TABLE IF NOT EXISTS monitoring_data (
+        db.prepare(`CREATE TABLE IF NOT EXISTS monitoring_logs (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           game_id INTEGER NOT NULL,
-          as_of_date DATE NOT NULL,
-          store_instock_rate INTEGER NOT NULL,
+          store_instock_rate REAL NOT NULL,
           first_prize_remaining INTEGER NOT NULL,
-          second_prize_remaining INTEGER NOT NULL,
-          third_prize_remaining INTEGER NOT NULL,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          alert_sent BOOLEAN DEFAULT FALSE,
+          checked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (game_id) REFERENCES games(id)
-        )`),
-        
-        db.prepare(`CREATE TABLE IF NOT EXISTS notification_settings (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          phone_number TEXT NOT NULL,
-          target_games TEXT NOT NULL,
-          is_active BOOLEAN DEFAULT TRUE,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`),
-        
-        db.prepare(`CREATE TABLE IF NOT EXISTS notification_logs (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          phone_number TEXT NOT NULL,
-          game_name TEXT NOT NULL,
-          round INTEGER NOT NULL,
-          message TEXT NOT NULL,
-          sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          status TEXT DEFAULT 'sent'
         )`)
+      ])
+      
+      // 인덱스 생성
+      await db.batch([
+        db.prepare(`CREATE INDEX IF NOT EXISTS idx_games_name_round ON games(name, round)`),
+        db.prepare(`CREATE INDEX IF NOT EXISTS idx_monitoring_game_id ON monitoring_logs(game_id)`)
       ])
       
       console.log('데이터베이스 초기화 완료')
@@ -170,7 +154,14 @@ app.get('/', (c) => {
 })
 
 // API 라우트들
-// 고정 전화번호 사용으로 알림 설정 API 제거
+// 간단한 헬스체크 API
+app.get('/api/hello', (c) => {
+  return c.json({ 
+    success: true, 
+    message: 'Hello from 스피또 모니터링 시스템!',
+    timestamp: new Date().toISOString()
+  })
+})
 
 // 현재 스피또 상태 조회
 app.get('/api/status', async (c) => {

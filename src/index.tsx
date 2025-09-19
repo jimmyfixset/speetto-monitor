@@ -174,8 +174,8 @@ app.get('/', (c) => {
             
             let html = '<div class="space-y-4">';
             
-            Object.entries(data).forEach(([gameName, info]) => {
-                const gameDisplayName = gameName === 'speetto1000' ? '스피또1000' : '스피또2000';
+            Object.entries(data).forEach(([gameKey, info]) => {
+                const gameDisplayName = info.gameName === 'speetto1000' ? '스피또1000' : '스피또2000';
                 const isFullStock = info.storeInstockRate >= 100;
                 const hasFirstPrize = info.firstPrizeRemaining > 0;
                 

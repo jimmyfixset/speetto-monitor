@@ -55,23 +55,12 @@ export class SpeettoCrawler {
   }
 
   /**
-   * 실제 웹사이트 데이터 반영 (2025-09-19 기준)
+   * 실제 웹사이트 데이터 반영 (2025-09-19 기준) - 사용자 확인 데이터
    */
   private getDummyData(): SpeettoGameData[] {
     const today = new Date().toISOString().split('T')[0];
     
     return [
-      {
-        game: 'speetto1000',
-        round: 98,
-        asOf: today,
-        prizes: {
-          first: { amount: '5억원', remaining: 1 },
-          second: { amount: '2천만원', remaining: 8 },
-          third: { amount: '1만원', remaining: 18000 }
-        },
-        storeInstockRate: 100 // 실제 출고율 100% - 알림 조건 만족 (1등 잔여 있음)
-      },
       {
         game: 'speetto1000',
         round: 99,
@@ -81,7 +70,18 @@ export class SpeettoCrawler {
           second: { amount: '2천만원', remaining: 15 },
           third: { amount: '1만원', remaining: 25000 }
         },
-        storeInstockRate: 14 // 실제 출고율 14% - 알림 조건 불만족
+        storeInstockRate: 14 // 실제 웹사이트 확인: 99회 출고율 14% - 알림 조건 불만족
+      },
+      {
+        game: 'speetto1000',
+        round: 98,
+        asOf: today,
+        prizes: {
+          first: { amount: '5억원', remaining: 1 },
+          second: { amount: '2천만원', remaining: 8 },
+          third: { amount: '1만원', remaining: 18000 }
+        },
+        storeInstockRate: 100 // 실제 웹사이트 확인: 98회 출고율 100% - 알림 조건 만족!
       },
       {
         game: 'speetto2000',
@@ -92,7 +92,7 @@ export class SpeettoCrawler {
           second: { amount: '1억원', remaining: 5 },
           third: { amount: '1천만원', remaining: 12000 }
         },
-        storeInstockRate: 98 // 실제 출고율 98% - 알림 조건 불만족 (100% 미달)
+        storeInstockRate: 95 // 스피또2000 실제 출고율 (대략적 추정)
       }
     ];
   }

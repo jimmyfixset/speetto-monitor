@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { serveStatic } from 'hono/cloudflare-workers'
+// import { serveStatic } from 'hono/cloudflare-workers' // 정적 파일 서빙 제거
 import { MonitoringService } from './services/monitoring-service'
 
 type Bindings = {
@@ -88,8 +88,7 @@ const app = new Hono<{ Bindings: Bindings, Variables: Variables }>()
 // CORS 설정
 app.use('/api/*', cors())
 
-// 정적 파일 서빙 - Cloudflare Pages 호환
-app.use('/*', serveStatic({ root: './public' }))
+// 정적 파일 서빙 제거 - 모든 JS/CSS를 인라인으로 처리
 
 // 메인 페이지
 app.get('/', (c) => {

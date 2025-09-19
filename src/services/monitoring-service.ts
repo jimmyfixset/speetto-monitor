@@ -130,15 +130,12 @@ export class MonitoringService {
 
       if (existingGame) {
         gameId = existingGame.id as number;
-        // 업데이트
-        await this.db.prepare(`
-          UPDATE games SET updated_at = CURRENT_TIMESTAMP WHERE id = ?
-        `).bind(gameId).run();
+        // 기존 게임이면 별도 업데이트 없이 ID만 사용
       } else {
         // 새로 생성
         const insertResult = await this.db.prepare(`
-          INSERT INTO games (name, round, created_at, updated_at) 
-          VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          INSERT INTO games (name, round, created_at) 
+          VALUES (?, ?, CURRENT_TIMESTAMP)
         `).bind(gameData.game, gameData.round).run();
         
         gameId = insertResult.meta.last_row_id as number;

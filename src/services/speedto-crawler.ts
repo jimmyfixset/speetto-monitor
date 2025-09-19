@@ -63,17 +63,6 @@ export class SpeettoCrawler {
     return [
       {
         game: 'speetto1000',
-        round: 99,
-        asOf: today,
-        prizes: {
-          first: { amount: '5억원', remaining: 2 },
-          second: { amount: '2천만원', remaining: 15 },
-          third: { amount: '1만원', remaining: 25000 }
-        },
-        storeInstockRate: 14 // 실제 출고율 14% - 알림 조건 불만족
-      },
-      {
-        game: 'speetto1000',
         round: 98,
         asOf: today,
         prizes: {
@@ -84,15 +73,26 @@ export class SpeettoCrawler {
         storeInstockRate: 100 // 실제 출고율 100% - 알림 조건 만족 (1등 잔여 있음)
       },
       {
+        game: 'speetto1000',
+        round: 99,
+        asOf: today,
+        prizes: {
+          first: { amount: '5억원', remaining: 2 },
+          second: { amount: '2천만원', remaining: 15 },
+          third: { amount: '1만원', remaining: 25000 }
+        },
+        storeInstockRate: 14 // 실제 출고율 14% - 알림 조건 불만족
+      },
+      {
         game: 'speetto2000',
         round: 61,
         asOf: today,
         prizes: {
-          first: { amount: '10억원', remaining: 0 },
+          first: { amount: '10억원', remaining: 1 },
           second: { amount: '1억원', remaining: 5 },
           third: { amount: '1천만원', remaining: 12000 }
         },
-        storeInstockRate: 95 // 알림 조건 불만족 (1등 잔여 없음)
+        storeInstockRate: 98 // 실제 출고율 98% - 알림 조건 불만족 (100% 미달)
       }
     ];
   }

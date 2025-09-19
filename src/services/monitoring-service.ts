@@ -245,14 +245,17 @@ export class MonitoringService {
       const status: any = {};
 
       for (const gameData of gameDataList) {
-        status[gameData.game] = {
-          round: gameData.round,
-          storeInstockRate: gameData.storeInstockRate,
-          firstPrizeRemaining: gameData.prizes.first.remaining,
-          secondPrizeRemaining: gameData.prizes.second.remaining,
-          thirdPrizeRemaining: gameData.prizes.third.remaining,
-          asOf: gameData.asOf
-        };
+        // 같은 게임에 대해 더 높은 회차(최신)만 표시
+        if (!status[gameData.game] || status[gameData.game].round < gameData.round) {
+          status[gameData.game] = {
+            round: gameData.round,
+            storeInstockRate: gameData.storeInstockRate,
+            firstPrizeRemaining: gameData.prizes.first.remaining,
+            secondPrizeRemaining: gameData.prizes.second.remaining,
+            thirdPrizeRemaining: gameData.prizes.third.remaining,
+            asOf: gameData.asOf
+          };
+        }
       }
 
       return status;

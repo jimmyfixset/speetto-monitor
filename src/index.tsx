@@ -88,8 +88,8 @@ const app = new Hono<{ Bindings: Bindings, Variables: Variables }>()
 // CORS 설정
 app.use('/api/*', cors())
 
-// 정적 파일 서빙
-app.use('/static/*', serveStatic({ root: './public' }))
+// 정적 파일 서빙 - Cloudflare Pages 호환
+app.use('/*', serveStatic({ root: './public' }))
 
 // 메인 페이지
 app.get('/', (c) => {
@@ -137,17 +137,149 @@ app.get('/', (c) => {
             
             <div class="bg-white p-6 rounded-lg shadow">
                 <h2 class="text-xl font-semibold mb-4">
-                    <i class="fas fa-history mr-2 text-purple-600"></i>
-                    최근 알림 로그
+                    <i class="fas fa-cog mr-2 text-purple-600"></i>
+                    시스템 정보
                 </h2>
-                <div id="notification-logs">
-                    <p class="text-gray-600">로그를 불러오는 중...</p>
+                <div class="text-sm text-gray-600">
+                    <p>• <strong>모니터링 간격:</strong> 3시간마다 자동 체크</p>
+                    <p>• <strong>알림 조건:</strong> 출고율 100% + 1등 잔여 > 0</p>
+                    <p>• <strong>SMS 수신번호:</strong> 010-6779-0104</p>
+                    <p>• <strong>마지막 업데이트:</strong> <span id="last-update">방금 전</span></p>
                 </div>
             </div>
         </div>
         
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/app.js"></script>
+        <script>
+        // 스피또 모니터링 시스템 인라인 JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentStatus();
+        });
+
+        async function loadCurrentStatus() {
+            try {
+                const response = await axios.get('/api/status');
+                if (response.data.success) {
+                    displayCurrentStatus(response.data.data);
+                } else {
+                    showError('상태 조회 실패: ' + response.data.message);
+                }
+            } catch (error) {
+                console.error('Error loading status:', error);
+                showError('상태를 불러오는 중 오류가 발생했습니다.');
+            }
+        }
+
+        function displayCurrentStatus(data) {
+            const statusDiv = document.getElementById('current-status');
+            
+            let html = '<div class="space-y-4">';
+            
+            Object.entries(data).forEach(([gameName, info]) => {
+                const gameDisplayName = gameName === 'speetto1000' ? '스피또1000' : '스피또2000';
+                const isFullStock = info.storeInstockRate >= 100;
+                const hasFirstPrize = info.firstPrizeRemaining > 0;
+                
+                const shouldAlert = isFullStock && hasFirstPrize;
+                
+                html += \`
+                    <div class="border rounded-lg p-4 \${shouldAlert ? 'bg-red-50 border-red-200' : 'bg-gray-50'}">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-semibold text-lg">\${gameDisplayName} (\${info.round}회)</h3>
+                            \${shouldAlert ? '<span class="text-red-600 font-bold text-sm">🚨 알림 조건 만족!</span>' : ''}
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">출고율:</span> 
+                                <span class="font-semibold \${isFullStock ? 'text-red-600' : ''}">\${info.storeInstockRate}%</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">기준일:</span> 
+                                <span class="font-semibold">\${info.asOf}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">1등 잔여:</span> 
+                                <span class="font-semibold \${hasFirstPrize ? 'text-green-600' : 'text-red-600'}">\${info.firstPrizeRemaining}매</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">2등 잔여:</span> 
+                                <span class="font-semibold">\${info.secondPrizeRemaining}매</span>
+                            </div>
+                        </div>
+                    </div>
+                \`;
+            });
+            
+            html += '</div>';
+            statusDiv.innerHTML = html;
+            
+            // 마지막 업데이트 시간 표시
+            const updateTime = document.getElementById('last-update');
+            if (updateTime) {
+                updateTime.textContent = new Date().toLocaleString('ko-KR');
+            }
+        }
+
+        async function checkNow() {
+            const checkButton = document.querySelector('button[onclick="checkNow()"]');
+            checkButton.disabled = true;
+            checkButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>체크 중...';
+            
+            try {
+                const response = await axios.post('/api/check-now');
+                
+                if (response.data.success) {
+                    showSuccess(response.data.message);
+                    await loadCurrentStatus();
+                } else {
+                    showError(response.data.message);
+                }
+            } catch (error) {
+                console.error('Error during check:', error);
+                showError('체크 중 오류가 발생했습니다.');
+            } finally {
+                checkButton.disabled = false;
+                checkButton.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>지금 확인';
+            }
+        }
+
+        function showSuccess(message) {
+            showNotification(message, 'success');
+        }
+
+        function showError(message) {
+            showNotification(message, 'error');
+        }
+
+        function showNotification(message, type) {
+            const existingNotification = document.querySelector('.notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = \`notification fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 \${
+                type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+            }\`;
+            notification.innerHTML = \`
+                <div class="flex items-center">
+                    <i class="fas \${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>
+                    <span>\${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            \`;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification && notification.parentNode) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+        </script>
     </body>
     </html>
   `)
